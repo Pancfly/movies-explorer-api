@@ -14,15 +14,13 @@ const getUserId = (req, res, next) => {
   const id = req.user._id;
 
   User.findById(id)
-    .orFail(new Error('NotValidId'))
+    .orFail(new NotFoundError('Пользователь по указанному id не найден.'))
     .then((user) => {
-      res.status(200).send(user);
+      res.send(user);
     })
     .catch((err) => {
       if (err.name === 'CastError') {
         next(new BadRequestError('Переданы некорректные данные для поиска пользователя.'));
-      } else if (err.message === 'NotValidId') {
-        next(new NotFoundError('Пользователь по указанному _id не найден.'));
       } else {
         next(err);
       }
@@ -39,19 +37,20 @@ const updateProfile = (req, res, next) => {
     { name: newName, email: newEmail },
     { runValidators: true, new: true },
   )
-    .orFail(new Error('NotValidId'))
+    .orFail(new NotFoundError('Пользователь по указанному _id не найден.'))
     .then((user) => {
-      res.status(200).send(user);
+      res.send(user);
     })
     .catch((err) => {
-      if (err.message === 'NotValidId') {
-        next(new NotFoundError('Пользователь по указанному _id не найден.'));
-      } else if (err.name === 'ValidationError' || err.name === 'CastError') {
+      if (err.name === 'ValidationError' || err.name === 'CastError') {
         next(new BadRequestError('Переданы некорректные данные при обновлении профиля пользователя.'));
+      } else if (err.code === 11000) {
+        next(new ConflictError('Пользователь с таким email уже существует.'));
       } else {
         next(err);
       }
-    });
+    })
+    .catch(next);
 };
 
 const login = (req, res, next) => {
@@ -93,7 +92,7 @@ const createUser = (req, res, next) => {
       name: req.body.name,
     }))
     .then((user) => {
-      res.status(200).send({
+      res.send({
         name: user.name,
         _id: user._id,
         email: user.email,
@@ -107,7 +106,8 @@ const createUser = (req, res, next) => {
       } else {
         next(err);
       }
-    });
+    })
+    .catch(next);
 };
 
 const logout = (req, res) => {

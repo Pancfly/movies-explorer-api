@@ -15,22 +15,21 @@ const router = require('./routes/index');
 
 const app = express();
 
+const { PORT = port, MONGO_ADRESS, NODE_ENV } = process.env;
+
+mongoose.connect(NODE_ENV === 'production' ? MONGO_ADRESS : mongoAdress);
+
+app.use(requestLogger);
+app.use(rateLimiter);
 app.use(cors({
   option: allowedCors,
   origin: allowedCors,
   credentials: true,
 }));
-
-const { PORT = port } = process.env;
-
-mongoose.connect(mongoAdress);
-
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
-app.use(cookieParser());
-app.use(requestLogger);
 app.use(helmet());
-app.use(rateLimiter);
+app.use(cookieParser());
 
 app.get('/crash-test', () => {
   setTimeout(() => {

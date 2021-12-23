@@ -8,17 +8,14 @@ const getMovies = (req, res, next) => {
   const owner = req.user._id;
 
   Movie.find({ owner })
-    .orFail(new Error('NotValidOwner'))
+    .orFail(new NotFoundError('Передан несуществующий id пользователя.'))
     .then((cards) => {
-      res.status(200).send(cards);
+      res.send(cards);
     })
     .catch((err) => {
-      if (err.message === 'NotValidOwner') {
-        next(new NotFoundError('Передан несуществующий _id пользователя.'));
-      } else {
-        next(err);
-      }
-    });
+      next(err);
+    })
+    .catch(next);
 };
 
 const createMovie = (req, res, next) => {
@@ -26,7 +23,7 @@ const createMovie = (req, res, next) => {
 
   Movie.create({ owner, ...req.body })
     .then((movie) => {
-      res.status(201).send({ data: movie }); //
+      res.status(201).send({ data: movie });
     })
     .catch((err) => {
       if (err.name === 'ValidationError') {
@@ -50,7 +47,7 @@ const deleteMovie = (req, res, next) => {
       } else {
         Movie.findByIdAndDelete(movieId)
           .then((deletedMovie) => {
-            res.status(200).send({ data: deletedMovie });
+            res.send({ data: deletedMovie });
           })
           .catch(next);
       }
